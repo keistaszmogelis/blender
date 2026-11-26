@@ -1,0 +1,53 @@
+name: Build Blender for Windows
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-2022
+    timeout-minutes: 240
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@v4
+        env:
+          GIT_LFS_SKIP_SMUDGE: '1'
+        with:
+          persist-credentials: false
+
+      - name: Download Blender assets and Windows libraries
+        run: |
+          python -B build_files/utils/make_update.py --no-blender --architecture x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git lfs pull lfs-fallback
+
+      - name: Configure the Windows x64 Release build
+        run: |
+          cmake -S . -B "$env:RUNNER_TEMP/blender-build" -G "Visual Studio 17 2022" -A x64 `
+            -D CMAKE_INSTALL_PREFIX="$env:RUNNER_TEMP/blender-portable"
+
+      - name: Compile and install Blender
+        run: |
+          cmake --build "$env:RUNNER_TEMP/blender-build" --config Release --target INSTALL --parallel 2
+
+      - name: Verify the installed executable
+        run: |
+          & "$env:RUNNER_TEMP/blender-portable/blender.exe" --version
+
+      - name: Upload the portable Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-windows-x64-${{ github.sha }}
+          path: ${{ runner.temp }}/blender-portable/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 14
