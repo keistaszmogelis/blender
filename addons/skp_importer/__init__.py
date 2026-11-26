@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -177,7 +177,7 @@ class Importer:
             if extension not in (".jpg", ".jpeg", ".png", ".bmp", ".tga", ".tif", ".tiff", ".gif", ".webp"):
                 extension = ".png"
             path = self.directory / f"texture-{len(self.materials)}{extension}"
-            sdk.call("SUTextureWriteToFile", texture, os.fsencode(path))
+            sdk.call("SUTextureWriteToFile", texture, C.c_char_p(str(path).encode("utf-8")))
             image = bpy.data.images.load(str(path), check_existing=False)
             self.images.append(image)
             image.name = Path(filename).name or path.name
@@ -414,7 +414,7 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
             try:
                 model, status = Ref(), C.c_int()
                 sdk.call("SUModelCreateFromFileWithStatus", C.pointer(model),
-                         os.fsencode(self.filepath), C.pointer(status))
+                         C.c_char_p(self.filepath.encode("utf-8")), C.pointer(status))
                 try:
                     if status.value:
                         self.report({"WARNING"}, "This file is newer than the installed SketchUp SDK. Some data may be missing.")
