@@ -1,8 +1,8 @@
-"""Import SketchUp files through Trimble's standalone Windows SDK."""
+"""Import SketchUp files through Trimble's standalone desktop SDK."""
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 5),
+    "version": (0, 1, 6),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -41,12 +41,17 @@ class Transform(C.Structure):
 
 class SDK:
     def __init__(self, path):
-        if sys.platform != "win32":
-            raise RuntimeError("This add-on currently requires Windows x64.")
+        if sys.platform not in {"win32", "darwin"}:
+            raise RuntimeError("This add-on requires Windows x64 or macOS.")
         path = Path(path)
+        if path.is_dir() and path.suffix == ".framework":
+            path = path / "SketchUpAPI"
         if not path.is_file():
-            raise RuntimeError("Select SketchUpAPI.dll from the SketchUp Desktop SDK in Add-on Preferences.")
-        with os.add_dll_directory(str(path.parent)):
+            raise RuntimeError("Select the SketchUp SDK runtime in Add-on Preferences.")
+        if sys.platform == "win32":
+            with os.add_dll_directory(str(path.parent)):
+                self.dll = C.CDLL(str(path))
+        else:
             self.dll = C.CDLL(str(path))
         self.dll.SUInitialize.argtypes = []
         self.dll.SUInitialize.restype = None
@@ -394,6 +399,35 @@ class Importer:
                 self.component(child_name, child_entities, child_transform,
                                material or inherited, child_parent)
 
+    def add_assembly_bounds(self, objects):
+        root = objects[0]
+        world_matrices = {}
+        low = Vector((float("inf"),) * 3)
+        high = Vector((float("-inf"),) * 3)
+        for obj in objects:
+            matrix = obj.matrix_basis.copy()
+            if obj.parent is not None:
+                matrix = world_matrices[obj.parent] @ matrix
+            world_matrices[obj] = matrix
+            for vertex in obj.data.vertices:
+                point = matrix @ vertex.co
+                for axis in range(3):
+                    low[axis] = min(low[axis], point[axis])
+                    high[axis] = max(high[axis], point[axis])
+        if low.x == float("inf"):
+            low = high = root.matrix_basis.translation
+
+        box = bpy.data.objects.new(f"{root.name} Bounds", None)
+        self.objects.append(box)
+        self.collection.objects.link(box)
+        box.empty_display_type = "CUBE"
+        box.empty_display_size = 1.0
+        center = (low + high) * 0.5
+        half_size = Vector(max(extent * 0.5, 0.0005) for extent in high - low)
+        box.matrix_basis = Matrix.Translation(center) @ Matrix.Diagonal((*half_size, 1.0))
+        root.parent = box
+        root.matrix_parent_inverse = box.matrix_basis.inverted()
+
     def run(self, entities):
         geometry = Geometry()
         self.append_entities(geometry, entities, IDENTITY, None)
@@ -401,7 +435,10 @@ class Importer:
             mesh = self.mesh_from_geometry("Model Geometry", geometry)
             self.create_object("Model Geometry", mesh, None, IDENTITY)
         for name, child_entities, matrix, material in self.children(entities):
+            start = len(self.objects)
             self.component(name, child_entities, matrix, material, None)
+            if self.mode != "NO_JOIN" and len(self.objects) > start + 1:
+                self.add_assembly_bounds(self.objects[start:])
 
     def rollback(self):
         for datablocks, items in ((bpy.data.objects, self.objects), (bpy.data.meshes, self.meshes),
@@ -413,10 +450,12 @@ class Importer:
 class SKPPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    sdk_path: StringProperty(name="SketchUpAPI.dll", subtype="FILE_PATH")
+    sdk_path: StringProperty(name="SketchUp SDK Runtime", subtype="FILE_PATH")
 
     def draw(self, context):
         self.layout.prop(self, "sdk_path")
+        if sys.platform == "darwin":
+            self.layout.label(text="Select the SketchUpAPI binary inside SketchUpAPI.framework.")
 
 
 class ImportSKP(bpy.types.Operator, ImportHelper):
@@ -445,7 +484,11 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         try:
             preferences = context.preferences.addons[__package__].preferences
-            bundled = Path(__file__).resolve().parent / "x64" / "SketchUpAPI.dll"
+            addon_dir = Path(__file__).resolve().parent
+            if sys.platform == "darwin":
+                bundled = addon_dir / "SketchUpAPI.framework" / "SketchUpAPI"
+            else:
+                bundled = addon_dir / "x64" / "SketchUpAPI.dll"
             sdk_path = (
                 bundled if bundled.is_file() else
                 bpy.path.abspath(preferences.sdk_path) if preferences.sdk_path else ""
