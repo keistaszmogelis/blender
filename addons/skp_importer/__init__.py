@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -57,12 +57,19 @@ class SDK:
         function = getattr(self.dll, name)
         function.argtypes = [type(arg) for arg in args]
         function.restype = C.c_int
-        result = function(*args)
+        result = self.invoke(function, *args)
         if result == 9 and optional:
             return False
         if result:
             raise RuntimeError(f"{name} returned SketchUp error {result}")
         return True
+
+    @staticmethod
+    def invoke(function, *args):
+        try:
+            return function(*args)
+        except OSError as error:
+            raise RuntimeError(f"SketchUp SDK call {function.__name__} failed: {error}") from error
 
     def value(self, name, ref, kind=Ref, optional=False):
         output = kind()
@@ -75,7 +82,7 @@ class SDK:
             return []
         output = (kind * count)()
         written = C.c_size_t()
-        self.call(name, ref, C.c_size_t(count), output, C.pointer(written))
+        self.call(name, ref, C.c_size_t(count), C.cast(output, C.POINTER(kind)), C.pointer(written))
         return list(output[:written.value])
 
     def items(self, prefix, suffix, ref):
@@ -90,7 +97,7 @@ class SDK:
             length = self.value("SUStringGetUTF8Length", string, C.c_size_t).value
             buffer = C.create_string_buffer(length + 1)
             written = C.c_size_t()
-            self.call("SUStringGetUTF8", string, C.c_size_t(length + 1), buffer, C.pointer(written))
+            self.call("SUStringGetUTF8", string, C.c_size_t(length + 1), C.cast(buffer, C.POINTER(C.c_char)), C.pointer(written))
             return buffer.value.decode("utf-8", errors="replace")
         finally:
             self.call("SUStringRelease", C.pointer(string))
@@ -303,7 +310,7 @@ class Importer:
         function = getattr(self.sdk.dll, conversion)
         function.argtypes = [Ref]
         function.restype = Ref
-        return self.sdk.value("SUDrawingElementGetMaterial", function(instance), optional=True)
+        return self.sdk.value("SUDrawingElementGetMaterial", self.sdk.invoke(function, instance), optional=True)
 
     def object_from_geometry(self, name, geometry, parent, transform):
         mesh = bpy.data.meshes.new(name)
@@ -410,7 +417,7 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
             preferences = context.preferences.addons[__package__].preferences
             sdk_path = bpy.path.abspath(preferences.sdk_path) if preferences.sdk_path else ""
             sdk = SDK(sdk_path)
-            sdk.dll.SUInitialize()
+            sdk.invoke(sdk.dll.SUInitialize)
             try:
                 model, status = Ref(), C.c_int()
                 sdk.call("SUModelCreateFromFileWithStatus", C.pointer(model),
@@ -431,7 +438,7 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
                 finally:
                     sdk.call("SUModelRelease", C.pointer(model))
             finally:
-                sdk.dll.SUTerminate()
+                sdk.invoke(sdk.dll.SUTerminate)
         except (RuntimeError, OSError, AttributeError, ValueError) as error:
             self.report({"ERROR"}, str(error))
             return {"CANCELLED"}
