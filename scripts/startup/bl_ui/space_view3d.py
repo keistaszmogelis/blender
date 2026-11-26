@@ -87,13 +87,6 @@ class VIEW3D_HT_tool_header(Header):
             context, layout,
             tool_key=('VIEW_3D', tool_mode),
         )
-        # Object Mode Options
-        # -------------------
-
-        # Example of how tool_settings can be accessed as pop-overs.
-
-        # TODO(campbell): editing options should be after active tool options
-        # (obviously separated for from the users POV)
         draw_fn = getattr(_draw_tool_settings_context_mode, tool_mode, None)
         if draw_fn is not None:
             is_valid_context = draw_fn(context, layout, tool)
@@ -108,7 +101,6 @@ class VIEW3D_HT_tool_header(Header):
             layout.popover("VIEW3D_PT_tools_brush_shape")
             layout.popover("VIEW3D_PT_tools_brush_display")
 
-        # NOTE: general mode options should be added to `draw_mode_settings`.
         if tool_mode == 'SCULPT':
             if is_valid_context:
                 draw_3d_brush_settings(layout, tool_mode)
@@ -164,81 +156,6 @@ class VIEW3D_HT_tool_header(Header):
         mode_string = context.mode
         tool_settings = context.tool_settings
 
-        def row_for_mirror():
-            row = layout.row(align=True)
-            row.label(icon='MOD_MIRROR')
-            sub = row.row(align=True)
-            sub.scale_x = 0.6
-            return row, sub
-
-        if mode_string == 'EDIT_ARMATURE':
-            ob = context.object
-            _row, sub = row_for_mirror()
-            sub.prop(ob.data, "use_mirror_x", text="X", toggle=True)
-        elif mode_string == 'POSE':
-            ob = context.object
-            _row, sub = row_for_mirror()
-            sub.prop(ob.pose, "use_mirror_x", text="X", toggle=True)
-        elif mode_string in {'EDIT_MESH', 'PAINT_WEIGHT', 'SCULPT', 'PAINT_VERTEX', 'PAINT_TEXTURE'}:
-            # Mesh Modes, Use Mesh Symmetry
-            ob = context.object
-            row, sub = row_for_mirror()
-            sub.prop(ob, "use_mesh_mirror_x", text="X", toggle=True)
-            sub.prop(ob, "use_mesh_mirror_y", text="Y", toggle=True)
-            sub.prop(ob, "use_mesh_mirror_z", text="Z", toggle=True)
-            if mode_string == 'EDIT_MESH':
-                layout.prop(tool_settings, "use_mesh_automerge", text="")
-            elif mode_string == 'PAINT_WEIGHT':
-                row.popover(panel="VIEW3D_PT_tools_weightpaint_symmetry_for_topbar", text="")
-            elif mode_string == 'SCULPT':
-                row.popover(panel="VIEW3D_PT_sculpt_symmetry_for_topbar", text="")
-            elif mode_string == 'PAINT_VERTEX':
-                row.popover(panel="VIEW3D_PT_tools_vertexpaint_symmetry_for_topbar", text="")
-            elif mode_string == 'PAINT_TEXTURE' and show_experimental_texture_paint(tool_settings.image_paint.brush):
-                row.popover(panel="VIEW3D_PT_tools_imagepaint_symmetry_for_topbar", text="")
-        elif mode_string == 'SCULPT_CURVES':
-            ob = context.object
-            _row, sub = row_for_mirror()
-            sub.prop(ob.data, "use_mirror_x", text="X", toggle=True)
-            sub.prop(ob.data, "use_mirror_y", text="Y", toggle=True)
-            sub.prop(ob.data, "use_mirror_z", text="Z", toggle=True)
-
-            row = layout.row(align=True)
-            row.prop(ob.data, "use_sculpt_collision", icon='MOD_PHYSICS', icon_only=True, toggle=True)
-            sub = row.row(align=True)
-            sub.active = ob.data.use_sculpt_collision
-            sub.prop(ob.data, "surface_collision_distance")
-
-        # Expand panels from the side-bar as popovers.
-        popover_kw = {"space_type": 'VIEW_3D', "region_type": 'UI', "category": "Tool"}
-
-        if mode_string == 'SCULPT':
-            layout.popover_group(context=".sculpt_mode", **popover_kw)
-        elif mode_string == 'PAINT_VERTEX':
-            layout.popover_group(context=".vertexpaint", **popover_kw)
-        elif mode_string == 'PAINT_WEIGHT':
-            layout.popover_group(context=".weightpaint", **popover_kw)
-        elif mode_string == 'PAINT_TEXTURE':
-            layout.popover_group(context=".imagepaint", **popover_kw)
-        elif mode_string == 'EDIT_TEXT':
-            layout.popover_group(context=".text_edit", **popover_kw)
-        elif mode_string == 'EDIT_ARMATURE':
-            layout.popover_group(context=".armature_edit", **popover_kw)
-        elif mode_string == 'EDIT_METABALL':
-            layout.popover_group(context=".mball_edit", **popover_kw)
-        elif mode_string == 'EDIT_LATTICE':
-            layout.popover_group(context=".lattice_edit", **popover_kw)
-        elif mode_string == 'EDIT_CURVE':
-            layout.popover_group(context=".curve_edit", **popover_kw)
-        elif mode_string == 'EDIT_MESH':
-            layout.popover_group(context=".mesh_edit", **popover_kw)
-        elif mode_string == 'POSE':
-            layout.popover_group(context=".posemode", **popover_kw)
-        elif mode_string == 'PARTICLE':
-            layout.popover_group(context=".particlemode", **popover_kw)
-        elif mode_string == 'OBJECT':
-            layout.popover_group(context=".objectmode", **popover_kw)
-
         if mode_string in {
             'EDIT_GREASE_PENCIL',
             'PAINT_GREASE_PENCIL',
@@ -261,12 +178,6 @@ class VIEW3D_HT_tool_header(Header):
                     panel="VIEW3D_PT_grease_pencil_multi_frame",
                     text="Multiframe",
                 )
-
-        if mode_string == 'PAINT_GREASE_PENCIL':
-            layout.prop(tool_settings, "use_gpencil_draw_additive", text="", icon='FREEZE')
-            layout.prop(tool_settings, "use_gpencil_automerge_strokes", text="")
-            layout.prop(tool_settings, "use_gpencil_weight_data_add", text="", icon='WPAINT_HLT')
-            layout.prop(tool_settings, "use_gpencil_draw_onback", text="", icon='MOD_OPACITY')
 
 
 class _draw_tool_settings_context_mode:
@@ -518,7 +429,6 @@ class _draw_tool_settings_context_mode:
 
         brush_basic_grease_pencil_weight_settings(layout, context, brush, compact=True)
 
-        layout.popover("VIEW3D_PT_tools_grease_pencil_weight_options", text="Options")
         layout.popover("VIEW3D_PT_tools_grease_pencil_brush_weight_falloff", text="Falloff")
 
         return True
@@ -1095,8 +1005,24 @@ class VIEW3D_HT_header(Header):
                 text="",
             )
         else:
-            # Transform settings depending on tool header visibility
             VIEW3D_HT_header.draw_xform_template(layout, context)
+
+        options_panel = {
+            'OBJECT': "VIEW3D_PT_tools_object_options",
+            'EDIT_MESH': "VIEW3D_PT_tools_meshedit_options",
+            'EDIT_ARMATURE': "VIEW3D_PT_tools_armatureedit_options",
+            'POSE': "VIEW3D_PT_tools_posemode_options",
+            'SCULPT': "VIEW3D_PT_sculpt_options",
+            'SCULPT_CURVES': "VIEW3D_PT_curves_sculpt_symmetry",
+            'PAINT_WEIGHT': "VIEW3D_PT_tools_weightpaint_options",
+            'PAINT_VERTEX': "VIEW3D_PT_tools_vertexpaint_symmetry",
+            'PAINT_TEXTURE': "VIEW3D_PT_tools_imagepaint_options",
+            'PARTICLE': "VIEW3D_PT_tools_particlemode_options",
+            'PAINT_GREASE_PENCIL': "VIEW3D_PT_tools_grease_pencil_paint_options",
+            'WEIGHT_GREASE_PENCIL': "VIEW3D_PT_tools_grease_pencil_weight_options",
+        }.get(mode_string)
+        if options_panel:
+            layout.popover(panel=options_panel, text="", icon='COLLAPSEMENU')
 
         layout.separator_spacer()
 

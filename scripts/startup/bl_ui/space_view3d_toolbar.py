@@ -75,6 +75,7 @@ class View3DPanel:
 
 
 class VIEW3D_PT_tools_object_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".objectmode"  # dot on purpose (access from topbar)
     bl_label = "Options"
@@ -85,6 +86,7 @@ class VIEW3D_PT_tools_object_options(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_object_options_transform(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".objectmode"  # dot on purpose (access from topbar)
     bl_label = "Transform"
@@ -109,6 +111,7 @@ class VIEW3D_PT_tools_object_options_transform(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_meshedit_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".mesh_edit"  # dot on purpose (access from topbar)
     bl_label = "Options"
@@ -121,6 +124,7 @@ class VIEW3D_PT_tools_meshedit_options(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_meshedit_options_transform(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".mesh_edit"  # dot on purpose (access from topbar)
     bl_label = "Transform"
@@ -167,6 +171,7 @@ class VIEW3D_PT_tools_meshedit_options_transform(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_meshedit_options_uvs(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".mesh_edit"  # dot on purpose (access from topbar)
     bl_label = "UVs"
@@ -187,6 +192,7 @@ class VIEW3D_PT_tools_meshedit_options_uvs(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_armatureedit_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".armature_edit"  # dot on purpose (access from topbar)
     bl_label = "Options"
@@ -200,6 +206,7 @@ class VIEW3D_PT_tools_armatureedit_options(View3DPanel, Panel):
 # ********** default tools for pose-mode ****************
 
 class VIEW3D_PT_tools_posemode_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_category = "Tool"
     bl_context = ".posemode"  # dot on purpose (access from topbar)
     bl_label = "Pose Options"
@@ -918,6 +925,8 @@ class VIEW3D_PT_tools_brush_falloff_normal(View3DPaintPanel, Panel):
 
 
 class VIEW3D_PT_sculpt_dyntopo(Panel, View3DPaintPanel):
+    bl_parent_id = "VIEW3D_PT_sculpt_options"
+    bl_region_type = 'HEADER'
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
     bl_label = "Dyntopo"
     bl_options = {'DEFAULT_CLOSED'}
@@ -970,6 +979,8 @@ class VIEW3D_PT_sculpt_dyntopo(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_voxel_remesh(Panel, View3DPaintPanel):
+    bl_parent_id = "VIEW3D_PT_sculpt_options"
+    bl_region_type = 'HEADER'
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
     bl_label = "Remesh"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1001,6 +1012,7 @@ class VIEW3D_PT_sculpt_voxel_remesh(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_options(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
     bl_label = "Options"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1030,6 +1042,7 @@ class VIEW3D_PT_sculpt_options(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_options_gravity(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
     bl_parent_id = "VIEW3D_PT_sculpt_options"
     bl_label = "Gravity"
@@ -1054,6 +1067,8 @@ class VIEW3D_PT_sculpt_options_gravity(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_symmetry(Panel, View3DPaintPanel):
+    bl_parent_id = "VIEW3D_PT_sculpt_options"
+    bl_region_type = 'HEADER'
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
     bl_label = "Symmetry"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1123,6 +1138,7 @@ class VIEW3D_PT_sculpt_symmetry_for_topbar(Panel):
 
 
 class VIEW3D_PT_curves_sculpt_symmetry(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".curves_sculpt"  # dot on purpose (access from topbar)
     bl_label = "Symmetry"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1158,6 +1174,8 @@ class VIEW3D_PT_curves_sculpt_symmetry_for_topbar(Panel):
 
 
 class VIEW3D_PT_tools_weightpaint_symmetry(Panel, View3DPaintPanel):
+    bl_parent_id = "VIEW3D_PT_tools_weightpaint_options"
+    bl_region_type = 'HEADER'
     bl_context = ".weightpaint"
     bl_options = {'DEFAULT_CLOSED'}
     bl_label = "Symmetry"
@@ -1208,6 +1226,7 @@ class VIEW3D_PT_tools_weightpaint_symmetry_for_topbar(Panel):
 
 
 class VIEW3D_PT_tools_weightpaint_options(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".weightpaint"
     bl_label = "Options"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1250,6 +1269,7 @@ class VIEW3D_PT_tools_vertexpaint_options(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_tools_vertexpaint_symmetry(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".vertexpaint"  # dot on purpose (access from topbar)
     bl_options = {'DEFAULT_CLOSED'}
     bl_label = "Symmetry"
@@ -1296,6 +1316,7 @@ class VIEW3D_PT_tools_vertexpaint_symmetry_for_topbar(Panel):
 
 
 class VIEW3D_PT_tools_imagepaint_options_external(Panel, View3DPaintPanel):
+    bl_region_type = 'HEADER'
     bl_context = ".imagepaint"  # dot on purpose (access from topbar)
     bl_label = "External"
     bl_parent_id = "VIEW3D_PT_tools_imagepaint_options"
@@ -1321,6 +1342,8 @@ class VIEW3D_PT_tools_imagepaint_options_external(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_tools_imagepaint_symmetry(Panel, View3DPaintPanel):
+    bl_parent_id = "VIEW3D_PT_tools_imagepaint_options"
+    bl_region_type = 'HEADER'
     bl_context = ".imagepaint"  # dot on purpose (access from topbar)
     bl_label = "Symmetry"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1377,6 +1400,7 @@ class VIEW3D_PT_tools_imagepaint_symmetry_for_topbar(Panel):
 
 
 class VIEW3D_PT_tools_imagepaint_options(View3DPaintPanel, Panel):
+    bl_region_type = 'HEADER'
     bl_context = ".imagepaint"  # dot on purpose (access from topbar)
     bl_label = "Options"
     bl_options = {'DEFAULT_CLOSED'}
@@ -1465,6 +1489,7 @@ class VIEW3D_MT_tools_projectpaint_stencil(Menu):
 
 
 class VIEW3D_PT_tools_particlemode_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     """Default tools for particle mode"""
     bl_category = "Tool"
     bl_context = ".particlemode"
@@ -1527,6 +1552,7 @@ class VIEW3D_PT_tools_particlemode_options(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_particlemode_options_shapecut(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     """Default tools for particle mode"""
     bl_category = "Tool"
     bl_parent_id = "VIEW3D_PT_tools_particlemode_options"
@@ -1546,6 +1572,7 @@ class VIEW3D_PT_tools_particlemode_options_shapecut(View3DPanel, Panel):
 
 
 class VIEW3D_PT_tools_particlemode_options_display(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
     """Default tools for particle mode"""
     bl_category = "Tool"
     bl_parent_id = "VIEW3D_PT_tools_particlemode_options"
@@ -1704,7 +1731,21 @@ class VIEW3D_PT_tools_grease_pencil_brush_weight_falloff(GreasePencilBrushFallof
         return (brush and brush.curve_distance_falloff)
 
 
+class VIEW3D_PT_tools_grease_pencil_paint_options(View3DPanel, Panel):
+    bl_region_type = 'HEADER'
+    bl_label = "Options"
+
+    def draw(self, context):
+        layout = self.layout
+        tool_settings = context.tool_settings
+        layout.prop(tool_settings, "use_gpencil_draw_additive", icon='FREEZE')
+        layout.prop(tool_settings, "use_gpencil_automerge_strokes")
+        layout.prop(tool_settings, "use_gpencil_weight_data_add", icon='WPAINT_HLT')
+        layout.prop(tool_settings, "use_gpencil_draw_onback", icon='MOD_OPACITY')
+
+
 class VIEW3D_PT_tools_grease_pencil_weight_options(Panel, View3DPanel, GreasePencilWeightPanel):
+    bl_region_type = 'HEADER'
     bl_label = "Options"
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -2469,19 +2510,19 @@ classes = (
     VIEW3D_PT_tools_brush_display,
     VIEW3D_PT_tools_weight_gradient,
 
+    VIEW3D_PT_sculpt_options,
     VIEW3D_PT_sculpt_dyntopo,
     VIEW3D_PT_sculpt_voxel_remesh,
     VIEW3D_PT_sculpt_symmetry,
     VIEW3D_PT_sculpt_symmetry_for_topbar,
-    VIEW3D_PT_sculpt_options,
     VIEW3D_PT_sculpt_options_gravity,
 
     VIEW3D_PT_curves_sculpt_symmetry,
     VIEW3D_PT_curves_sculpt_symmetry_for_topbar,
 
+    VIEW3D_PT_tools_weightpaint_options,
     VIEW3D_PT_tools_weightpaint_symmetry,
     VIEW3D_PT_tools_weightpaint_symmetry_for_topbar,
-    VIEW3D_PT_tools_weightpaint_options,
 
     VIEW3D_PT_tools_vertexpaint_symmetry,
     VIEW3D_PT_tools_vertexpaint_symmetry_for_topbar,
@@ -2491,9 +2532,9 @@ classes = (
     VIEW3D_PT_stencil_projectpaint,
     VIEW3D_PT_tools_imagepaint_options_cavity,
 
+    VIEW3D_PT_tools_imagepaint_options,
     VIEW3D_PT_tools_imagepaint_symmetry,
     VIEW3D_PT_tools_imagepaint_symmetry_for_topbar,
-    VIEW3D_PT_tools_imagepaint_options,
 
     VIEW3D_PT_tools_imagepaint_options_external,
     VIEW3D_MT_tools_projectpaint_stencil,
@@ -2512,6 +2553,7 @@ classes = (
 
     VIEW3D_PT_tools_grease_pencil_weight_paint_select,
     VIEW3D_PT_tools_grease_pencil_weight_paint_settings,
+    VIEW3D_PT_tools_grease_pencil_paint_options,
     VIEW3D_PT_tools_grease_pencil_weight_options,
     VIEW3D_PT_tools_grease_pencil_brush_weight_falloff,
     VIEW3D_PT_tools_grease_pencil_weight_appearance,
