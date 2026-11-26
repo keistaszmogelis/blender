@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 3),
+    "version": (0, 1, 4),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -77,17 +77,26 @@ class SDK:
             return output
         return None
 
-    def array(self, name, ref, count, kind=Ref):
+    def array(self, name, ref, count, kind=Ref, *, query_args=()):
         if not count:
             return []
         output = (kind * count)()
         written = C.c_size_t()
-        self.call(name, ref, C.c_size_t(count), C.cast(output, C.POINTER(kind)), C.pointer(written))
+        self.call(name, ref, *query_args, C.c_size_t(count),
+                  C.cast(output, C.POINTER(kind)), C.pointer(written))
         return list(output[:written.value])
 
     def items(self, prefix, suffix, ref):
         count = self.value(f"{prefix}GetNum{suffix}", ref, C.c_size_t)
         return self.array(f"{prefix}Get{suffix}", ref, count.value)
+
+    def entity_edges(self, entities):
+        # False includes loose edges, curves, and edges belonging to faces.
+        standalone_only = C.c_bool(False)
+        count = C.c_size_t()
+        self.call("SUEntitiesGetNumEdges", entities, standalone_only, C.pointer(count))
+        return self.array("SUEntitiesGetEdges", entities, count.value,
+                          query_args=(standalone_only,))
 
     def string(self, name, ref):
         string = Ref()
@@ -267,7 +276,7 @@ class Importer:
                          for vertex in (start, end)]
             return tuple(sorted(endpoints))
 
-        for edge in sdk.items("SUEntities", "Edges", entities):
+        for edge in sdk.entity_edges(entities):
             key = edge_key(edge)
             if key[0] != key[1]:
                 geometry.edges.add(key)
