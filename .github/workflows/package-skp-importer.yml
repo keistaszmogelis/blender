@@ -1,0 +1,29 @@
+name: Package SketchUp importer
+
+on:
+  push:
+    paths:
+      - 'addons/skp_importer/**'
+      - '.github/workflows/package-skp-importer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        env:
+          GIT_LFS_SKIP_SMUDGE: '1'
+      - name: Validate Python syntax
+        run: python -m py_compile addons/skp_importer/__init__.py
+      - name: Upload installable add-on
+        uses: actions/upload-artifact@v4
+        with:
+          name: skp-importer
+          path: |
+            addons/
+            !addons/**/__pycache__/**
+          if-no-files-found: error
