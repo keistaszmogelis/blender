@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 2),
+    "version": (0, 1, 3),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -415,7 +415,11 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         try:
             preferences = context.preferences.addons[__package__].preferences
-            sdk_path = bpy.path.abspath(preferences.sdk_path) if preferences.sdk_path else ""
+            bundled = Path(__file__).resolve().parent / "x64" / "SketchUpAPI.dll"
+            sdk_path = (
+                bundled if bundled.is_file() else
+                bpy.path.abspath(preferences.sdk_path) if preferences.sdk_path else ""
+            )
             sdk = SDK(sdk_path)
             sdk.invoke(sdk.dll.SUInitialize)
             try:
