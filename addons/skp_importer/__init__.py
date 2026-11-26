@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 6),
+    "version": (0, 1, 7),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -145,6 +145,50 @@ def linear(channel):
     return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
 
 
+def merge_face_triangles(triangles):
+    """Dissolve shared edges while each merged region has one simple boundary."""
+    regions = {}
+    owners = {}
+    for index, triangle in enumerate(triangles):
+        boundary = set(zip(triangle, triangle[1:] + triangle[:1]))
+        while True:
+            neighbors = {owners[(end, start)] for start, end in boundary if (end, start) in owners}
+            for neighbor in sorted(neighbors):
+                other = regions[neighbor]
+                combined = boundary | other
+                merged = {edge for edge in combined if (edge[1], edge[0]) not in combined}
+                if polygon_boundary(merged) is None:
+                    continue
+                for edge in regions.pop(neighbor):
+                    del owners[edge]
+                boundary = merged
+                break
+            else:
+                break
+        regions[index] = boundary
+        owners.update((edge, index) for edge in boundary)
+    return [polygon_boundary(boundary) for boundary in regions.values()]
+
+
+def polygon_boundary(edges):
+    if len(edges) < 3:
+        return None
+    following = dict(edges)
+    if len(following) != len(edges):
+        return None
+    start = min(following)
+    ring = []
+    visited = set()
+    vertex = start
+    while vertex in following and vertex not in visited:
+        visited.add(vertex)
+        ring.append(vertex)
+        vertex = following[vertex]
+    if vertex == start and len(ring) == len(edges):
+        return ring
+    return None
+
+
 class Geometry:
     def __init__(self):
         self.vertices = []
@@ -231,21 +275,26 @@ class Importer:
                 coords = sdk.array(f"SUMeshHelperGet{side}STQCoords", helper, size, Point)
             lookup = {p.tuple(): i for i, p in enumerate(points)}
             hole_count = sdk.value("SUFaceGetNumInnerLoops", face, C.c_size_t).value
+            normal = sdk.value("SUFaceGetNormal", face, Point).tuple()
             if hole_count:
                 count = sdk.value("SUMeshHelperGetNumTriangles", helper, C.c_size_t).value
                 indices = sdk.array("SUMeshHelperGetVertexIndices", helper, count * 3, C.c_size_t)
-                polygons = [[points[index] for index in indices[i:i + 3]] for i in range(0, len(indices), 3)]
+                triangles = []
+                for offset in range(0, len(indices), 3):
+                    triangle = [lookup[points[index].tuple()] for index in indices[offset:offset + 3]]
+                    if len(set(triangle)) != 3:
+                        continue
+                    a, b, c = (Vector(points[index].tuple()) for index in triangle)
+                    if (b - a).cross(c - a).dot(Vector(normal)) < 0:
+                        triangle.reverse()
+                    triangles.append(triangle)
+                polygons = [[points[index] for index in ring] for ring in merge_face_triangles(triangles)]
             else:
                 outer = sdk.value("SUFaceGetOuterLoop", face)
                 polygons = [[sdk.value("SUVertexGetPosition", vertex, Point)
                              for vertex in sdk.items("SULoop", "Vertices", outer)]]
-            normal = sdk.value("SUFaceGetNormal", face, Point).tuple()
             corners = []
             for polygon in polygons:
-                if hole_count:
-                    a, b, c = (Vector(point.tuple()) for point in polygon)
-                    if (b - a).cross(c - a).dot(Vector(normal)) < 0:
-                        polygon.reverse()
                 data = []
                 for point in polygon:
                     index = lookup.get(point.tuple())
@@ -417,16 +466,22 @@ class Importer:
         if low.x == float("inf"):
             low = high = root.matrix_basis.translation
 
-        box = bpy.data.objects.new(f"{root.name} Bounds", None)
-        self.objects.append(box)
-        self.collection.objects.link(box)
-        box.empty_display_type = "CUBE"
-        box.empty_display_size = 1.0
         center = (low + high) * 0.5
-        half_size = Vector(max(extent * 0.5, 0.0005) for extent in high - low)
-        box.matrix_basis = Matrix.Translation(center) @ Matrix.Diagonal((*half_size, 1.0))
+        half_size = [max(extent * 0.505, 0.0005) for extent in high - low]
+        geometry = Geometry()
+        geometry.vertices = [
+            tuple(half_size[axis] if index & (1 << axis) else -half_size[axis] for axis in range(3))
+            for index in range(8)
+        ]
+        geometry.edges = {
+            (index, index | (1 << axis))
+            for index in range(8) for axis in range(3) if not index & (1 << axis)
+        }
+        name = f"{root.name} Bounds"
+        mesh = self.mesh_from_geometry(name, geometry)
+        box = self.create_object(name, mesh, None, Matrix.Translation(center))
         root.parent = box
-        root.matrix_parent_inverse = box.matrix_basis.inverted()
+        root.matrix_parent_inverse = Matrix.Translation(-center)
 
     def run(self, entities):
         geometry = Geometry()
