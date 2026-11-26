@@ -26,7 +26,7 @@ jobs:
 
       - name: Download Blender assets and Windows libraries
         run: |
-          python -B build_files/utils/make_update.py --no-blender --architecture x64
+          python -B build_files/utils/make_update.py --no-blender --architecture x86_64
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git lfs pull lfs-fallback
 
