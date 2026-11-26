@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "SketchUp (.skp)",
-    "version": (0, 1, 4),
+    "version": (0, 1, 5),
     "blender": (4, 2, 0),
     "location": "File > Import",
     "category": "Import-Export",
@@ -161,6 +161,7 @@ class Importer:
         self.texture_scales = {}
         self.objects = []
         self.meshes = []
+        self.component_meshes = {}
         self.images = []
         self.new_materials = []
 
@@ -321,7 +322,7 @@ class Importer:
         function.restype = Ref
         return self.sdk.value("SUDrawingElementGetMaterial", self.sdk.invoke(function, instance), optional=True)
 
-    def object_from_geometry(self, name, geometry, parent, transform):
+    def mesh_from_geometry(self, name, geometry):
         mesh = bpy.data.meshes.new(name)
         self.meshes.append(mesh)
         # from_pydata expects unique edges, including those it derives from polygons.
@@ -344,6 +345,9 @@ class Importer:
             edge.use_edge_sharp = tuple(sorted(edge.vertices)) in geometry.sharp
         if geometry.corners:
             mesh.normals_split_custom_set([normal.normalized() for normal, _ in geometry.corners])
+        return mesh
+
+    def create_object(self, name, mesh, parent, transform):
         obj = bpy.data.objects.new(name, mesh)
         self.objects.append(obj)
         self.collection.objects.link(obj)
@@ -362,22 +366,40 @@ class Importer:
         location, rotation, scale = transform.decompose()
         object_transform = Matrix.LocRotScale(location, rotation, scale)
         residual = object_transform.inverted_safe() @ transform
-        geometry = Geometry()
-        join = self.mode == "JOIN" or (self.mode == "AUTO" and len(children) >= self.threshold)
-        if join:
-            self.collect(geometry, entities, residual, inherited, children)
-        else:
-            self.append_entities(geometry, entities, residual, inherited)
-        obj = self.object_from_geometry(name, geometry, parent, object_transform)
+        if all(abs(value - IDENTITY[row][column]) <= 1e-6
+               for row, values in enumerate(residual)
+               for column, value in enumerate(values)):
+            residual = IDENTITY
+
+        join = self.mode == "AUTO" and len(children) >= self.threshold
+        key = (entities.ptr, inherited.ptr if inherited else None, join,
+               tuple(tuple(row) for row in residual))
+        mesh = self.component_meshes.get(key)
+        if mesh is None:
+            geometry = Geometry()
+            if join:
+                self.collect(geometry, entities, residual, inherited, children)
+            else:
+                self.append_entities(geometry, entities, residual, inherited)
+            mesh = self.mesh_from_geometry(name, geometry)
+            self.component_meshes[key] = mesh
+        obj = self.create_object(name, mesh, parent, object_transform)
         if not join:
             for child_name, child_entities, matrix, material in children:
-                self.component(child_name, child_entities, residual @ matrix, material or inherited, obj)
+                child_transform = residual @ matrix
+                child_parent = obj
+                if self.mode == "NO_JOIN":
+                    child_transform = object_transform @ child_transform
+                    child_parent = None
+                self.component(child_name, child_entities, child_transform,
+                               material or inherited, child_parent)
 
     def run(self, entities):
         geometry = Geometry()
         self.append_entities(geometry, entities, IDENTITY, None)
         if geometry.faces or geometry.edges:
-            self.object_from_geometry("Model Geometry", geometry, None, IDENTITY)
+            mesh = self.mesh_from_geometry("Model Geometry", geometry)
+            self.create_object("Model Geometry", mesh, None, IDENTITY)
         for name, child_entities, matrix, material in self.children(entities):
             self.component(name, child_entities, matrix, material, None)
 
@@ -408,18 +430,17 @@ class ImportSKP(bpy.types.Operator, ImportHelper):
         name="Nested Components",
         items=[
             ("HIERARCHY", "Hierarchy", "Create separate child mesh objects"),
-            ("JOIN", "Join", "Join descendants into each top-level component mesh"),
-            ("AUTO", "Automatic", "Join a component's subtree when its direct child count reaches the threshold"),
+            ("AUTO", "Auto Join", "Join a component's subtree when its direct child count reaches the threshold"),
+            ("NO_JOIN", "No Join", "Keep every instance as a separate object without parenting"),
         ],
-        default="AUTO",
+        default="NO_JOIN",
     )
     threshold: IntProperty(name="Join Threshold", default=10, min=1)
 
     def draw(self, context):
-        self.layout.prop(self, "nesting")
-        row = self.layout.row()
-        row.enabled = self.nesting == "AUTO"
-        row.prop(self, "threshold")
+        self.layout.row(align=True).prop(self, "nesting", expand=True)
+        if self.nesting == "AUTO":
+            self.layout.prop(self, "threshold")
 
     def execute(self, context):
         try:
