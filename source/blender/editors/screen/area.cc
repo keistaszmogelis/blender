@@ -1372,7 +1372,7 @@ static void region_azone_tab_plus(ScrArea *area, AZone *az, ARegion *region)
     if (tool_header && tool_header->alignment == RGN_ALIGN_TOP &&
         !(tool_header->flag & (RGN_FLAG_HIDDEN | RGN_FLAG_TOO_SMALL | RGN_FLAG_POLL_FAILED)))
     {
-      const int offset = std::max(0, int(az->y2) - tool_header->winrct.ymin + U.pixelsize);
+      const int offset = std::max(0, int(az->y2) - tool_header->winrct.ymin + int(U.pixelsize));
       az->y1 -= offset;
       az->y2 -= offset;
     }
