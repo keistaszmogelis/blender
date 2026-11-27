@@ -51,3 +51,64 @@ jobs:
           if-no-files-found: error
           compression-level: 1
           retention-days: 14
+
+  publish-windows:
+    if: github.ref == 'refs/heads/main'
+    needs: windows-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-blender-windows-main
+      cancel-in-progress: false
+    steps:
+      - name: Download the verified build
+        uses: actions/download-artifact@v4
+        with:
+          name: blender-windows-x64-${{ github.sha }}
+          path: blender-portable
+
+      - name: Publish the latest Windows build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=latest-windows
+          asset="blender-windows-x64-${GITHUB_RUN_NUMBER}.zip"
+          notes="Portable Windows x64 build from main. Extract the ZIP and run blender.exe. The asset filename includes the workflow run number."
+
+          get_assets() {
+            gh release view "$tag" --json assets --jq '.assets[] | select(.state == "uploaded") | .name'
+          }
+
+          if assets=$(get_assets); then
+            while IFS= read -r previous; do
+              if [[ "$previous" =~ ^blender-windows-x64-([0-9]+)\.zip$ ]] &&
+                 (( BASH_REMATCH[1] > GITHUB_RUN_NUMBER )); then
+                exit 0
+              fi
+            done <<< "$assets"
+          else
+            assets=
+          fi
+
+          if ! grep -Fxq "$asset" <<< "$assets"; then
+            (cd blender-portable && zip -q -1 -r "../$asset" .)
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" "$asset"
+            else
+              gh release create "$tag" "$asset" --target "$GITHUB_SHA" \
+                --title "Latest Windows Build" --notes "$notes"
+            fi
+          fi
+
+          assets=$(get_assets)
+          grep -Fxq "$asset" <<< "$assets"
+          while IFS= read -r previous; do
+            if [[ "$previous" =~ ^blender-windows-x64-([0-9]+)\.zip$ ]] &&
+               (( BASH_REMATCH[1] < GITHUB_RUN_NUMBER )); then
+              gh release delete-asset "$tag" "$previous" --yes
+            fi
+          done <<< "$assets"
