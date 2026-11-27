@@ -5893,6 +5893,12 @@ void draw_button(const bContext *C, ARegion *region, uiStyle *style, Button *but
         else {
           /* Popover button. */
           wt = popover_widget_type(but, rect);
+          const ScrArea *area = CTX_wm_area(C);
+          if (but->type == ButtonType::Popover && but->icon == ICON_PREFERENCES && area &&
+              area->spacetype == SPACE_TOPBAR)
+          {
+            wt->wcol_theme = &tui->wcol_tab;
+          }
         }
         break;
 

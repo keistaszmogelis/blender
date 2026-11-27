@@ -1601,7 +1601,15 @@ void view3d_draw_region_info(const bContext *C, ARegion *region)
 
   if ((v3d->flag2 & V3D_HIDE_OVERLAYS) == 0) {
     int xoffset = rect->xmin + (0.5f * U.widget_unit);
-    int yoffset = rect->ymax - (0.1f * U.widget_unit);
+    int text_top = rect->ymax;
+    const ARegion *tool_header = BKE_area_find_region_type(CTX_wm_area(C), RGN_TYPE_TOOL_HEADER);
+    if (tool_header && tool_header->runtime->visible && tool_header->alignment == RGN_ALIGN_TOP &&
+        BLI_rcti_isect(&region->winrct, &tool_header->winrct, nullptr))
+    {
+      text_top = std::min(text_top, tool_header->winrct.ymin - region->winrct.ymin -
+                                        int(6 * UI_SCALE_FAC));
+    }
+    int yoffset = text_top - (0.1f * U.widget_unit);
 
     const uiFontStyle *fstyle = UI_FSTYLE_WIDGET;
     ui::fontstyle_set(fstyle);

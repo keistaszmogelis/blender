@@ -1197,6 +1197,7 @@ enum class ButtonSectionsAlign : int8_t { None = 1, Top, Bottom };
 void region_button_sections_draw(const ARegion *region,
                                  int /*THemeColorID*/ colorid,
                                  ButtonSectionsAlign align);
+bool region_button_sections_overlap_x(const ARegion *region, int xmin, int xmax);
 bool region_button_sections_is_inside_x(const ARegion *region, const int mval_x);
 
 /**

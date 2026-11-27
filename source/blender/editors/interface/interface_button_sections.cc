@@ -128,7 +128,14 @@ static void draw_button_sections_background(const ARegion *region,
                                             const float corner_radius)
 {
   float bg_color[4];
-  theme::get_color_4fv(colorid, bg_color);
+  const bool floating_tool_header = align == ButtonSectionsAlign::None &&
+                                    region->regiontype == RGN_TYPE_TOOL_HEADER;
+  theme::get_color_4fv(floating_tool_header ? TH_PANEL_BACK : colorid, bg_color);
+  float outline[4];
+  if (floating_tool_header) {
+    theme::get_color_4fv(TH_PANEL_OUTLINE, outline);
+  }
+  GPU_blend(GPU_BLEND_ALPHA);
 
   for (const rcti &bounds : section_bounds) {
     int roundbox_corners = [align]() -> int {
@@ -166,7 +173,11 @@ static void draw_button_sections_background(const ARegion *region,
     }
     draw_roundbox_corner_set(roundbox_corners);
     draw_roundbox_4fv(&bounds_float, true, corner_radius, bg_color);
+    if (floating_tool_header && outline[3] > 0.0f) {
+      draw_roundbox_4fv(&bounds_float, false, corner_radius, outline);
+    }
   }
+  GPU_blend(GPU_BLEND_NONE);
 }
 
 static void draw_button_sections_alignment_separator(const ARegion *region,
@@ -242,16 +253,21 @@ void region_button_sections_draw(const ARegion *region,
   }
 }
 
-bool region_button_sections_is_inside_x(const ARegion *region, const int mval_x)
+bool region_button_sections_overlap_x(const ARegion *region, const int xmin, const int xmax)
 {
   const Vector<rcti> section_bounds = button_section_bounds_calc(region, true);
 
   for (const rcti &bounds : section_bounds) {
-    if (BLI_rcti_isect_x(&bounds, mval_x)) {
+    if (bounds.xmin <= xmax && bounds.xmax >= xmin) {
       return true;
     }
   }
   return false;
+}
+
+bool region_button_sections_is_inside_x(const ARegion *region, const int mval_x)
+{
+  return region_button_sections_overlap_x(region, mval_x, mval_x);
 }
 
 }  // namespace blender::ui

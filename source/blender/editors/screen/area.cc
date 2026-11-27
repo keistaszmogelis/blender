@@ -1367,6 +1367,16 @@ static void region_azone_tab_plus(ScrArea *area, AZone *az, ARegion *region)
       az->y2 = region->winrct.ymax - (edge_offset * tab_size_x);
       break;
   }
+  if (area->spacetype == SPACE_VIEW3D && region->regiontype == RGN_TYPE_TOOLS) {
+    const ARegion *tool_header = BKE_area_find_region_type(area, RGN_TYPE_TOOL_HEADER);
+    if (tool_header && tool_header->alignment == RGN_ALIGN_TOP &&
+        !(tool_header->flag & (RGN_FLAG_HIDDEN | RGN_FLAG_TOO_SMALL | RGN_FLAG_POLL_FAILED)))
+    {
+      const int offset = std::max(0, int(az->y2) - tool_header->winrct.ymin + U.pixelsize);
+      az->y1 -= offset;
+      az->y2 -= offset;
+    }
+  }
   /* rect needed for mouse pointer test */
   BLI_rcti_init(&az->rect, az->x1, az->x2, az->y1, az->y2);
 }
@@ -1874,11 +1884,9 @@ static void region_rect_recursive(
           /* Float below the main header, level with the toolbar buttons. */
           const int available_gap = std::max(0, BLI_rcti_size_y(winrct) + 1 - prefsizey);
           region->winrct.ymax -= std::min(int(6 * UI_SCALE_FAC), available_gap);
-          /* Leave room for the navigation gizmo in the upper-right corner. */
-          const int gutter = int(UI_SCALE_FAC * U.gizmo_size_navigate_v3d) + 2 * UI_UNIT_X;
-          if (BLI_rcti_size_x(&region->winrct) > gutter + UI_UNIT_X) {
-            region->winrct.xmax -= gutter;
-          }
+          const int side_gap = std::min(int(6 * UI_SCALE_FAC), BLI_rcti_size_x(winrct) / 2);
+          region->winrct.xmin += side_gap;
+          region->winrct.xmax -= side_gap;
         }
         region->winrct.ymin = region->winrct.ymax - prefsizey + 1;
         winrct->ymax = region->winrct.ymin - 1;
@@ -2066,13 +2074,6 @@ static void region_rect_recursive(
   /* exception for multiple overlapping regions on same spot */
   if (region->overlap && (alignment != RGN_ALIGN_FLOAT)) {
     region_overlap_fix(area, region);
-  }
-
-  if (area->spacetype == SPACE_VIEW3D && region->regiontype == RGN_TYPE_UI &&
-      !is_hidden && !(region->flag & RGN_FLAG_TOO_SMALL))
-  {
-    /* The category tabs and panels have their own top padding. */
-    region->winrct.ymax -= std::min(int(2 * UI_SCALE_FAC), BLI_rcti_size_y(&region->winrct));
   }
 
   /* Set `region->winrct` for action-zones. */

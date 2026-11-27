@@ -1503,7 +1503,11 @@ void panel_category_tabs_draw_all(const bContext *C,
   /* Padding of tabs around text. */
   const int tab_v_pad_text = round_fl_to_int(TABS_PADDING_TEXT_FACTOR * dpi_fac * zoom) + 2 * px;
   /* Padding between tabs. */
-  const int tab_v_pad = round_fl_to_int(TABS_PADDING_BETWEEN_FACTOR * dpi_fac * zoom);
+  const ScrArea *area = CTX_wm_area(C);
+  const bool view3d_sidebar = area && area->spacetype == SPACE_VIEW3D &&
+                             region->regiontype == RGN_TYPE_UI;
+  const float tab_padding = TABS_PADDING_BETWEEN_FACTOR - (view3d_sidebar ? 1.0f : 0.0f);
+  const int tab_v_pad = round_fl_to_int(tab_padding * dpi_fac * zoom);
 
   /* Primary theme colors. */
   uchar theme_col_back[4];
@@ -1889,7 +1893,9 @@ static bool uiAlignPanelStep(ARegion *region, const float factor, const bool dra
   }
 
   /* Y offset. */
-  int y = 0;
+  const bool view3d_toolbar = region->regiontype == RGN_TYPE_TOOLS &&
+                              panel_sort.first().panel->type->space_type == SPACE_VIEW3D;
+  int y = view3d_toolbar ? int(std::ceil(HEADER_PADDING_Y * UI_SCALE_FAC / 2.0f)) : 0;
   if (BKE_region_panel_categories_search_filter_visible(region)) {
     y = -UI_PANEL_SEARCH_BLOCK_MARGIN_HEIGHT;
   }
