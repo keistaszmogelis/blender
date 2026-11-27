@@ -188,6 +188,10 @@ class ToolActivePanelHelper:
             context,
             layout.column(),
             show_tool_icon_always=True,
+            show_tool_identity=not (
+                self.bl_space_type == 'VIEW_3D' and
+                (context.mode == 'OBJECT' or context.mode.startswith('EDIT_'))
+            ),
             tool_key=ToolSelectPanelHelper._tool_key_from_context(context, space_type=self.bl_space_type),
         )
 
@@ -811,6 +815,7 @@ class ToolSelectPanelHelper:
             context, layout,
             *,
             show_tool_icon_always=False,
+            show_tool_identity=True,
             tool_key=None,
     ):
         if tool_key is None:
@@ -827,17 +832,16 @@ class ToolSelectPanelHelper:
             return None
         # NOTE: we could show `item.text` here but it makes the layout jitter when switching tools.
         # Add some spacing since the icon is currently assuming regular small icon size.
-        if show_tool_icon_always:
+        if show_tool_identity and show_tool_icon_always:
             layout.label(
                 text="    " + iface_(item.label, i18n_contexts.operator_default),
                 icon_value=icon_value,
                 translate=False,
             )
             layout.separator()
-        else:
-            if not context.space_data.show_region_toolbar:
-                layout.template_icon(icon_value=icon_value, scale=0.5)
-                layout.separator()
+        elif show_tool_identity and not context.space_data.show_region_toolbar:
+            layout.template_icon(icon_value=icon_value, scale=0.5)
+            layout.separator()
 
         draw_settings = item.draw_settings
         if draw_settings is not None:

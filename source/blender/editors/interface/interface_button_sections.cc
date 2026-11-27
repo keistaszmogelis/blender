@@ -143,12 +143,14 @@ static void draw_button_sections_background(const ARegion *region,
       return CNR_ALL;
     }();
 
-    /* No rounded corners at the region edge. */
-    if (bounds.xmin == 0) {
-      roundbox_corners &= ~(CNR_TOP_LEFT | CNR_BOTTOM_LEFT);
-    }
-    if (bounds.xmax >= region->winx) {
-      roundbox_corners &= ~(CNR_TOP_RIGHT | CNR_BOTTOM_RIGHT);
+    /* A floating 3D View tool header keeps its corners even at its region edges. */
+    if (align != ButtonSectionsAlign::None || region->regiontype != RGN_TYPE_TOOL_HEADER) {
+      if (bounds.xmin == 0) {
+        roundbox_corners &= ~(CNR_TOP_LEFT | CNR_BOTTOM_LEFT);
+      }
+      if (bounds.xmax >= region->winx) {
+        roundbox_corners &= ~(CNR_TOP_RIGHT | CNR_BOTTOM_RIGHT);
+      }
     }
 
     rctf bounds_float;

@@ -1871,6 +1871,9 @@ static void region_rect_recursive(
 
       if (alignment == RGN_ALIGN_TOP) {
         if (inset_tool_header) {
+          /* Float below the main header, level with the toolbar buttons. */
+          const int available_gap = std::max(0, BLI_rcti_size_y(winrct) + 1 - prefsizey);
+          region->winrct.ymax -= std::min(int(6 * UI_SCALE_FAC), available_gap);
           /* Leave room for the navigation gizmo in the upper-right corner. */
           const int gutter = int(UI_SCALE_FAC * U.gizmo_size_navigate_v3d) + 2 * UI_UNIT_X;
           if (BLI_rcti_size_x(&region->winrct) > gutter + UI_UNIT_X) {
@@ -2063,6 +2066,13 @@ static void region_rect_recursive(
   /* exception for multiple overlapping regions on same spot */
   if (region->overlap && (alignment != RGN_ALIGN_FLOAT)) {
     region_overlap_fix(area, region);
+  }
+
+  if (area->spacetype == SPACE_VIEW3D && region->regiontype == RGN_TYPE_UI &&
+      !is_hidden && !(region->flag & RGN_FLAG_TOO_SMALL))
+  {
+    /* The category tabs and panels have their own top padding. */
+    region->winrct.ymax -= std::min(int(2 * UI_SCALE_FAC), BLI_rcti_size_y(&region->winrct));
   }
 
   /* Set `region->winrct` for action-zones. */

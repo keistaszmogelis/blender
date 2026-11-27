@@ -1475,7 +1475,7 @@ static void view3d_tools_header_region_draw(const bContext *C, ARegion *region)
       C,
       region,
       (RGN_ALIGN_ENUM_FROM_MASK(region->alignment) == RGN_ALIGN_TOP) ?
-          ui::ButtonSectionsAlign::Top :
+          ui::ButtonSectionsAlign::None :
           ui::ButtonSectionsAlign::Bottom);
 }
 
