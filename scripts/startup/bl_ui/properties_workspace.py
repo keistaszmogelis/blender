@@ -13,18 +13,12 @@ from rna_prop_ui import PropertyPanel
 
 
 class WorkSpaceButtonsPanel:
-    # bl_space_type = 'PROPERTIES'
-    # bl_region_type = 'WINDOW'
-    # bl_context = ".workspace"
-
-    # Developer note: this is displayed in tool settings as well as the 3D view.
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "Tool"
-
+    bl_space_type = 'TOPBAR'
+    bl_region_type = 'HEADER'
 
 class WORKSPACE_PT_main(WorkSpaceButtonsPanel, Panel):
     bl_label = "Workspace"
+    bl_ui_units_x = 18
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):

@@ -1007,6 +1007,8 @@ class VIEW3D_HT_header(Header):
         else:
             VIEW3D_HT_header.draw_xform_template(layout, context)
 
+        self.draw_header_mode_controls(layout, context)
+
         options_panel = {
             'OBJECT': "VIEW3D_PT_tools_object_options",
             'EDIT_MESH': "VIEW3D_PT_tools_meshedit_options",
@@ -1018,7 +1020,6 @@ class VIEW3D_HT_header(Header):
             'PAINT_VERTEX': "VIEW3D_PT_tools_vertexpaint_symmetry",
             'PAINT_TEXTURE': "VIEW3D_PT_tools_imagepaint_options",
             'PARTICLE': "VIEW3D_PT_tools_particlemode_options",
-            'PAINT_GREASE_PENCIL': "VIEW3D_PT_tools_grease_pencil_paint_options",
             'WEIGHT_GREASE_PENCIL': "VIEW3D_PT_tools_grease_pencil_weight_options",
         }.get(mode_string)
         if options_panel:
@@ -1100,6 +1101,66 @@ class VIEW3D_HT_header(Header):
                     icon='PLAY' if rv3d.pause_render else 'PAUSE',
                     text="",
                 )
+
+    @staticmethod
+    def draw_header_mode_controls(layout, context):
+        mode_string = context.mode
+        tool_settings = context.tool_settings
+
+        def row_for_mirror():
+            row = layout.row(align=True)
+            row.label(icon='MOD_MIRROR')
+            sub = row.row(align=True)
+            sub.scale_x = 0.6
+            return row, sub
+
+        if mode_string == 'EDIT_ARMATURE':
+            ob = context.object
+            _row, sub = row_for_mirror()
+            sub.prop(ob.data, "use_mirror_x", text="X", toggle=True)
+        elif mode_string == 'POSE':
+            ob = context.object
+            _row, sub = row_for_mirror()
+            sub.prop(ob.pose, "use_mirror_x", text="X", toggle=True)
+        elif mode_string in {'EDIT_MESH', 'PAINT_WEIGHT', 'SCULPT', 'PAINT_VERTEX', 'PAINT_TEXTURE'}:
+            # Mesh Modes, Use Mesh Symmetry
+            ob = context.object
+            row, sub = row_for_mirror()
+            sub.prop(ob, "use_mesh_mirror_x", text="X", toggle=True)
+            sub.prop(ob, "use_mesh_mirror_y", text="Y", toggle=True)
+            sub.prop(ob, "use_mesh_mirror_z", text="Z", toggle=True)
+            if mode_string == 'EDIT_MESH':
+                layout.prop(tool_settings, "use_mesh_automerge", text="")
+            elif mode_string == 'PAINT_WEIGHT':
+                row.popover(panel="VIEW3D_PT_tools_weightpaint_symmetry_for_topbar", text="")
+            elif mode_string == 'SCULPT':
+                row.popover(panel="VIEW3D_PT_sculpt_symmetry_for_topbar", text="")
+            elif mode_string == 'PAINT_VERTEX':
+                row.popover(panel="VIEW3D_PT_tools_vertexpaint_symmetry_for_topbar", text="")
+            elif mode_string == 'PAINT_TEXTURE' and show_experimental_texture_paint(tool_settings.image_paint.brush):
+                row.popover(panel="VIEW3D_PT_tools_imagepaint_symmetry_for_topbar", text="")
+        elif mode_string == 'SCULPT_CURVES':
+            ob = context.object
+            _row, sub = row_for_mirror()
+            sub.prop(ob.data, "use_mirror_x", text="X", toggle=True)
+            sub.prop(ob.data, "use_mirror_y", text="Y", toggle=True)
+            sub.prop(ob.data, "use_mirror_z", text="Z", toggle=True)
+
+            row = layout.row(align=True)
+            row.prop(ob.data, "use_sculpt_collision", icon='MOD_PHYSICS', icon_only=True, toggle=True)
+            sub = row.row(align=True)
+            sub.active = ob.data.use_sculpt_collision
+            sub.prop(ob.data, "surface_collision_distance")
+
+        if mode_string == 'SCULPT':
+            layout.popover(panel="VIEW3D_PT_sculpt_dyntopo")
+            layout.popover(panel="VIEW3D_PT_sculpt_voxel_remesh")
+
+        if mode_string == 'PAINT_GREASE_PENCIL':
+            layout.prop(tool_settings, "use_gpencil_draw_additive", text="", icon='FREEZE')
+            layout.prop(tool_settings, "use_gpencil_automerge_strokes", text="")
+            layout.prop(tool_settings, "use_gpencil_weight_data_add", text="", icon='WPAINT_HLT')
+            layout.prop(tool_settings, "use_gpencil_draw_onback", text="", icon='MOD_OPACITY')
 
     @staticmethod
     def _mesh_paint_automasking_icon(paint):

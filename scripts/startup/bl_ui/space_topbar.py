@@ -33,7 +33,9 @@ class TOPBAR_HT_upper_bar(Header):
         layout.separator(type='LINE')
 
         if not screen.show_fullscreen:
-            layout.template_ID_tabs(window, "workspace", new="workspace.add", menu="TOPBAR_MT_workspace_menu")
+            row = layout.row(align=True)
+            row.template_ID_tabs(window, "workspace", new="workspace.add", menu="TOPBAR_MT_workspace_menu")
+            row.popover(panel="WORKSPACE_PT_main", text="", icon='PREFERENCES')
         else:
             layout.operator("screen.back_to_previous", icon='SCREEN_BACK', text="Back to Previous")
 

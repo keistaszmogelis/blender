@@ -925,7 +925,6 @@ class VIEW3D_PT_tools_brush_falloff_normal(View3DPaintPanel, Panel):
 
 
 class VIEW3D_PT_sculpt_dyntopo(Panel, View3DPaintPanel):
-    bl_parent_id = "VIEW3D_PT_sculpt_options"
     bl_region_type = 'HEADER'
     bl_category = ""
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
@@ -980,7 +979,6 @@ class VIEW3D_PT_sculpt_dyntopo(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_voxel_remesh(Panel, View3DPaintPanel):
-    bl_parent_id = "VIEW3D_PT_sculpt_options"
     bl_region_type = 'HEADER'
     bl_category = ""
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
@@ -1071,7 +1069,6 @@ class VIEW3D_PT_sculpt_options_gravity(Panel, View3DPaintPanel):
 
 
 class VIEW3D_PT_sculpt_symmetry(Panel, View3DPaintPanel):
-    bl_parent_id = "VIEW3D_PT_sculpt_options"
     bl_region_type = 'HEADER'
     bl_category = ""
     bl_context = ".sculpt_mode"  # dot on purpose (access from topbar)
@@ -1741,20 +1738,6 @@ class VIEW3D_PT_tools_grease_pencil_brush_weight_falloff(GreasePencilBrushFallof
         settings = tool_settings.gpencil_weight_paint
         brush = settings.brush
         return (brush and brush.curve_distance_falloff)
-
-
-class VIEW3D_PT_tools_grease_pencil_paint_options(View3DPanel, Panel):
-    bl_region_type = 'HEADER'
-    bl_category = ""
-    bl_label = "Options"
-
-    def draw(self, context):
-        layout = self.layout
-        tool_settings = context.tool_settings
-        layout.prop(tool_settings, "use_gpencil_draw_additive", icon='FREEZE')
-        layout.prop(tool_settings, "use_gpencil_automerge_strokes")
-        layout.prop(tool_settings, "use_gpencil_weight_data_add", icon='WPAINT_HLT')
-        layout.prop(tool_settings, "use_gpencil_draw_onback", icon='MOD_OPACITY')
 
 
 class VIEW3D_PT_tools_grease_pencil_weight_options(Panel, View3DPanel, GreasePencilWeightPanel):
@@ -2567,7 +2550,6 @@ classes = (
 
     VIEW3D_PT_tools_grease_pencil_weight_paint_select,
     VIEW3D_PT_tools_grease_pencil_weight_paint_settings,
-    VIEW3D_PT_tools_grease_pencil_paint_options,
     VIEW3D_PT_tools_grease_pencil_weight_options,
     VIEW3D_PT_tools_grease_pencil_brush_weight_falloff,
     VIEW3D_PT_tools_grease_pencil_weight_appearance,
