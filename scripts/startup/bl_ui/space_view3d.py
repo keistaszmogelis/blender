@@ -25,6 +25,7 @@ from bl_ui.properties_grease_pencil_common import (
 )
 from bl_ui.space_toolsystem_common import (
     ToolActivePanelHelper,
+    ToolSelectPanelHelper,
 )
 from bpy.app.translations import (
     pgettext_iface as iface_,
@@ -6507,6 +6508,18 @@ class VIEW3D_MT_wpaint_vgroup_lock_pie(Menu):
 # ********** Panel **********
 
 
+def _show_active_tool_panel(context):
+    mode = context.mode
+    if mode == 'OBJECT' or mode.startswith('EDIT_'):
+        return True
+    tool_class = ToolSelectPanelHelper._tool_class_from_space_type('VIEW_3D')
+    item, tool, _ = tool_class._tool_get_active(context, 'VIEW_3D', mode)
+    return bool(item and (
+        item.draw_settings is not None or
+        (tool.idname_fallback and tool.idname_fallback != item.idname)
+    ))
+
+
 class VIEW3D_PT_active_tool(Panel, ToolActivePanelHelper):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -6517,7 +6530,7 @@ class VIEW3D_PT_active_tool(Panel, ToolActivePanelHelper):
     # Don't show in properties editor.
     @classmethod
     def poll(cls, context):
-        return context.area.type == 'VIEW_3D'
+        return context.area.type == 'VIEW_3D' and _show_active_tool_panel(context)
 
 
 # FIXME(campbell): remove this second panel once 'HIDE_HEADER' works with category tabs,
@@ -6531,7 +6544,7 @@ class VIEW3D_PT_active_tool_duplicate(Panel, ToolActivePanelHelper):
     # Only show in properties editor.
     @classmethod
     def poll(cls, context):
-        return context.area.type != 'VIEW_3D'
+        return context.area.type != 'VIEW_3D' and _show_active_tool_panel(context)
 
 
 class VIEW3D_PT_view3d_properties(Panel):

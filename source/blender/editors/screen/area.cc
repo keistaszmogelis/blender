@@ -1689,6 +1689,32 @@ bool ED_region_is_overlap(const int spacetype, const int regiontype)
   }
 }
 
+static void view3d_order_tool_header(ScrArea *area)
+{
+  if (area->spacetype != SPACE_VIEW3D) {
+    return;
+  }
+  ARegion *tool_header = BKE_area_find_region_type(area, RGN_TYPE_TOOL_HEADER);
+  ARegion *header = BKE_area_find_region_type(area, RGN_TYPE_HEADER);
+  ARegion *sidebar = BKE_area_find_region_type(area, RGN_TYPE_UI);
+  if (!tool_header || !header || !sidebar) {
+    return;
+  }
+  ARegion *preceding = RGN_ALIGN_ENUM_FROM_MASK(tool_header->alignment) == RGN_ALIGN_TOP ?
+                           sidebar :
+                           header;
+  if (tool_header->prev != preceding) {
+    BLI_remlink(&area->regionbase, tool_header);
+    BLI_insertlinkafter(&area->regionbase, preceding, tool_header);
+  }
+}
+
+static bool view3d_tool_header_is_inset(const ScrArea *area, const ARegion *region)
+{
+  return area->spacetype == SPACE_VIEW3D && region->regiontype == RGN_TYPE_TOOL_HEADER &&
+         RGN_ALIGN_ENUM_FROM_MASK(region->alignment) == RGN_ALIGN_TOP;
+}
+
 static void region_rect_recursive(
     ScrArea *area, ARegion *region, rcti *remainder, rcti *overlap_remainder, int quad)
 {
@@ -1716,7 +1742,8 @@ static void region_rect_recursive(
   const bool is_hidden = region_is_hidden(region);
 
   /* set here, assuming userpref switching forces to call this again */
-  region->overlap = ED_region_is_overlap(area->spacetype, region->regiontype);
+  const bool inset_tool_header = view3d_tool_header_is_inset(area, region);
+  region->overlap = inset_tool_header || ED_region_is_overlap(area->spacetype, region->regiontype);
 
   /* clear state flags first */
   region->flag &= ~(RGN_FLAG_TOO_SMALL | RGN_FLAG_SIZE_CLAMP_X | RGN_FLAG_SIZE_CLAMP_Y);
@@ -1843,6 +1870,13 @@ static void region_rect_recursive(
       region->winrct = *winrct;
 
       if (alignment == RGN_ALIGN_TOP) {
+        if (inset_tool_header) {
+          /* Leave room for the navigation gizmo in the upper-right corner. */
+          const int gutter = int(UI_SCALE_FAC * U.gizmo_size_navigate_v3d) + 2 * UI_UNIT_X;
+          if (BLI_rcti_size_x(&region->winrct) > gutter + UI_UNIT_X) {
+            region->winrct.xmax -= gutter;
+          }
+        }
         region->winrct.ymin = region->winrct.ymax - prefsizey + 1;
         winrct->ymax = region->winrct.ymin - 1;
       }
@@ -2290,6 +2324,7 @@ void ED_area_update_region_sizes(wmWindowManager *wm, wmWindow *win, ScrArea *ar
   /* region rect sizes */
   rcti rect = area->totrct;
   rcti overlap_rect = rect;
+  view3d_order_tool_header(area);
   region_rect_recursive(area, area->regionbase.first(), &rect, &overlap_rect, 0);
 
   /* Dynamically sized regions may have changed region sizes, so we have to force azone update. */
@@ -2395,6 +2430,7 @@ void ED_area_init(bContext *C, const wmWindow *win, ScrArea *area)
   /* region rect sizes */
   rcti rect = area->totrct;
   rcti overlap_rect = rect;
+  view3d_order_tool_header(area);
   region_rect_recursive(area, area->regionbase.first(), &rect, &overlap_rect, 0);
   area->flag &= ~AREA_FLAG_REGION_SIZE_UPDATE;
 

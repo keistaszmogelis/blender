@@ -278,7 +278,16 @@ static void WIDGETGROUP_navigate_draw_prepare(const bContext *C, wmGizmoGroup *g
     copy_v3_v3(navgroup->gz_array[GZ_INDEX_ROTATE]->matrix_offset[i], rv3d->viewmat[i]);
   }
 
-  const rcti *rect_visible = ED_region_visible_rect(region);
+  rcti visible_rect = *ED_region_visible_rect(region);
+  const ARegion *tool_header = BKE_area_find_region_type(CTX_wm_area(C), RGN_TYPE_TOOL_HEADER);
+  if (tool_header && tool_header->runtime->visible && tool_header->alignment == RGN_ALIGN_TOP &&
+      tool_header->winrct.ymin - region->winrct.ymin == visible_rect.ymax &&
+      tool_header->winrct.xmax < region->winrct.xmin + visible_rect.xmax)
+  {
+    /* The inset tool header reserves a gutter for the navigation gizmo. */
+    visible_rect.ymax = tool_header->winrct.ymax - region->winrct.ymin;
+  }
+  const rcti *rect_visible = &visible_rect;
 
   /* Ensure types match so bits are never lost on assignment. */
   CHECK_TYPE_PAIR(navgroup->state.rv3d.viewlock, rv3d->viewlock);
